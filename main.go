@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/akamensky/argparse"
 	"github.com/gorilla/websocket"
+	"github.com/schollz/progressbar/v3"
 	"io"
 	"log"
 	"net/http"
@@ -77,8 +78,14 @@ func sender(c *websocket.Conn, file string) {
 		fmt.Println("Cannot stat file:", err)
 		return
 	}
+	fileSize := fileInfo.Size()
 
-	err = c.WriteMessage(websocket.BinaryMessage, []byte(strconv.FormatInt(fileInfo.Size(), 10)))
+	bar := progressbar.DefaultBytes(
+		fileSize,
+		"sending",
+	)
+
+	err = c.WriteMessage(websocket.BinaryMessage, []byte(strconv.FormatInt(fileSize, 10)))
 	if err != nil {
 		fmt.Println("IO error:", err)
 		return
@@ -110,6 +117,7 @@ func sender(c *websocket.Conn, file string) {
 			fmt.Println("IO error:", err)
 			return
 		}
+		_ = bar.Add(len(buf))
 	}
 }
 
@@ -130,17 +138,26 @@ func receiver(c *websocket.Conn, file string) {
 		log.Println("parse size error:", err)
 		return
 	}
+
+	bar := progressbar.DefaultBytes(
+		int64(size),
+		"downloading",
+	)
+
 	for size > 0 {
 		_, data, err := c.ReadMessage()
 		if err != nil {
 			log.Println("read error:", err)
 			return
 		}
+
 		written, err := hFile.Write(data)
 		if err != nil {
 			log.Println("write error:", err)
 			return
 		}
+
+		_ = bar.Add(written)
 		size -= written
 	}
 	fmt.Printf("Done writing")
