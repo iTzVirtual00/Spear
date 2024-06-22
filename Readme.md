@@ -31,7 +31,7 @@ To use Spear, you can execute the following commands:
 
 - **Send files**:
   ```
-  spearsend -l 8080 -f filetosend.txt
+  spear send -l 8080 -f filetosend.txt
   ```
   or
   ```
