@@ -30,3 +30,4 @@ go.work
 target
 *.pem
 *.rsa
+temp/
