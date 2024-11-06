@@ -4,8 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"main/config"
 	"net/http"
+	"spear/config"
 )
 
 type BasicAuth struct {

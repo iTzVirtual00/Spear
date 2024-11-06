@@ -3,13 +3,13 @@ package main
 import (
 	"crypto/tls"
 	"log"
-	"main/auths"
-	"main/auths/httpbasic"
-	"main/auths/spear"
-	"main/config"
-	"main/fileserver"
-	"main/utils"
 	"net/http"
+	"spear/auths"
+	"spear/auths/httpbasic"
+	"spear/auths/spear"
+	"spear/config"
+	"spear/fileserver"
+	"spear/utils"
 )
 
 func main() {

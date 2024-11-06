@@ -1,7 +1,7 @@
 package config
 
 import (
-	"main/utils"
+	"spear/utils"
 )
 
 type SpearParameters struct {

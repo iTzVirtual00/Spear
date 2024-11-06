@@ -1,4 +1,4 @@
-module main
+module spear
 
 go 1.23.1
 

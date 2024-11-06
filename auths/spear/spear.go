@@ -4,8 +4,8 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	"main/config"
 	"net/http"
+	"spear/config"
 )
 
 type SpearAuth struct {

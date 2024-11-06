@@ -3,10 +3,10 @@ package fileserver
 import (
 	"fmt"
 	"html/template"
-	"main/config"
-	"main/utils"
 	"net/http"
 	"os"
+	"spear/config"
+	"spear/utils"
 	"strings"
 )
 
