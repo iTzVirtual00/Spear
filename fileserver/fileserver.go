@@ -43,7 +43,7 @@ func (fb FileserverBackend) fileserverHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if target == nil { // remove carefully (required by forloop)
-		http.Error(w, "404 Not Found", http.StatusNotFound)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
@@ -59,7 +59,7 @@ func (fb FileserverBackend) fileserverHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	http.Error(w, "404 Not Found", http.StatusNotFound)
+	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	return
 }
 
@@ -69,7 +69,7 @@ func (fb FileserverBackend) serveDirectory(w http.ResponseWriter, r *http.Reques
 	entries, err := os.ReadDir(dirPath.String())
 	fmt.Println(entries)
 	if err != nil {
-		http.Error(w, "404 Not Found", http.StatusNotFound)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
@@ -91,7 +91,7 @@ func (fb FileserverBackend) serveDirectory(w http.ResponseWriter, r *http.Reques
 `
 	tmpl, err := template.New("directory").Parse(tpl)
 	if err != nil {
-		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	err = tmpl.Execute(w, map[string]interface{}{
@@ -99,17 +99,79 @@ func (fb FileserverBackend) serveDirectory(w http.ResponseWriter, r *http.Reques
 		"Entries": entries,
 	})
 	if err != nil {
-		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 }
 
 func (fb FileserverBackend) serveFile(w http.ResponseWriter, r *http.Request, filePath *utils.Path) {
+	const chunkSize = 1 * 1024 * 1024 // 1MB buffer size
+	fileStat, err := os.Stat(filePath.String())
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	fileSize := uint64(fileStat.Size())
+	fmt.Println(r.Header.Get("Range"))
+	h := strings.TrimPrefix(r.Header.Get("Range"), "bytes=")
+	var ranges []utils.Range
+	if h != "" {
+		ranges, err = utils.ParseRangeHeader(h, fileSize, chunkSize)
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, http.StatusText(http.StatusRequestedRangeNotSatisfiable), http.StatusRequestedRangeNotSatisfiable)
+			return
+		}
+	} else {
+		ranges = []utils.Range{utils.NewRange(0, fileSize-1)}
+	}
+
+	inFile, err := os.Open(filePath.String())
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if len(ranges) > 1 {
+		http.Error(w, http.StatusText(http.StatusRequestedRangeNotSatisfiable), http.StatusRequestedRangeNotSatisfiable)
+		return
+	}
+	rg := ranges[0]
+	_, err = inFile.Seek(int64(rg.Start), 0)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusRequestedRangeNotSatisfiable), http.StatusRequestedRangeNotSatisfiable)
+		return
+	}
+
+	buf := make([]byte, chunkSize)
+
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filePath.Base()))
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-
-	// TODO: replace dummy data
-	fileData := []byte("Example content of the file.")
-	w.Write(fileData)
+	w.Header().Set("Accept-Ranges", "bytes")
+	w.Header().Set("Content-Length", strconv.FormatUint(rg.Size, 10))
+	//w.Header().Set("Cache-Control", "no-cache")
+	if rg.Start != 0 || rg.End != fileSize-1 {
+		w.Header().Set("Content-Range", fmt.Sprintf("bytes %v-%v/%v", rg.Start, rg.End, fileSize))
+		w.WriteHeader(http.StatusPartialContent)
+		fmt.Println("Partial content:", w.Header().Get("Content-Range"), w.Header().Get("Content-Length"))
+	}
+	fmt.Println(rg)
+	for i := uint64(0); i < rg.End; i += chunkSize {
+		read, err := inFile.Read(buf)
+		if err != nil {
+			w.Header().Del("Content-Disposition")
+			w.Header().Del("Accept-Ranges")
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		_, err = w.Write(buf[:read])
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		if read < chunkSize {
+			break
+		}
+	}
 }
