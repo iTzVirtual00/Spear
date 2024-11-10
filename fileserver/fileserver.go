@@ -3,6 +3,7 @@ package fileserver
 import (
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"spear/auths"
@@ -17,15 +18,22 @@ type FileserverBackend struct {
 	Config      *config.SpearConfig
 	Parameters  config.SpearParameters
 	AuthMethods []auths.AuthMethod
+	templates   *template.Template
 }
 
-func (fb FileserverBackend) RegisterFileserver(mux *http.ServeMux) {
+func (fb *FileserverBackend) RegisterFileserver(mux *http.ServeMux) {
+	var err error
+	fb.templates, err = template.New("").ParseFiles("templates/files.gohtml")
+	if err != nil {
+		log.Fatal("error while loading template/files.gohtml", err)
+	}
+	log.Println("Fileserver Template loaded")
 	mux.HandleFunc("/files/", fb.fileserverHandler)
-	mux.HandleFunc("/files", fb.fileserverHandler)
+	//mux.HandleFunc("/files", fb.fileserverHandler)
 }
 
 // fileserverHandler handles serving files and directories based on fb.Paths.
-func (fb FileserverBackend) fileserverHandler(w http.ResponseWriter, r *http.Request) {
+func (fb *FileserverBackend) fileserverHandler(w http.ResponseWriter, r *http.Request) {
 	var contactName = ""
 	var authResult auths.AuthResult
 OuterLoop:
@@ -58,34 +66,47 @@ OuterLoop:
 
 	relativePath := utils.NewPath(strings.TrimPrefix(r.URL.Path, "/files/"))
 
+	var isDir = false
+	var isRegular = false
 	var target *utils.Path = nil
-	for _, allowedPath := range fb.Parameters.Paths {
-		res, err := relativePath.IsRelativeTo(allowedPath)
-		if err != nil {
-			target = nil
-			break
-		}
-		if res {
-			target, err = relativePath.Abs()
+	var filesOverride []*utils.Path = nil
+
+	if r.URL.Path != "/files/" {
+		for _, allowedPath := range fb.Parameters.Paths {
+			res, err := relativePath.IsRelativeTo(allowedPath)
 			if err != nil {
 				target = nil
 				break
 			}
-			break
+			if res {
+				target, err = relativePath.Abs()
+				if err != nil {
+					target = nil
+					break
+				}
+				break
+			}
 		}
+
+		if target == nil { // remove carefully (required by forloop)
+			http.Error(w, http.StatusText(http.StatusNotFound)+"<br>"+contactName, http.StatusNotFound)
+			return
+		}
+		isDir, _ = target.IsDir()
+		isRegular, _ = target.IsRegular()
+	} else {
+		isDir = true
+		isRegular = false
+		filesOverride = fb.Parameters.Paths
+		log.Println(filesOverride)
 	}
-
-	if target == nil { // remove carefully (required by forloop)
-		http.Error(w, http.StatusText(http.StatusNotFound)+"<br>"+contactName, http.StatusNotFound)
-		return
-	}
-
-	isDir, _ := target.IsDir()
-	isRegular, _ := target.IsRegular()
-
 	fmt.Println(target, isRegular)
 	if isDir {
-		fb.serveDirectory(w, r, target, contactName)
+		if !strings.HasSuffix(r.URL.Path, "/") {
+			http.Redirect(w, r, r.URL.Path+"/", http.StatusFound)
+			return
+		}
+		fb.serveDirectory(w, r, target, filesOverride, contactName)
 		return
 	} else if isRegular {
 		fb.serveFile(w, r, target, contactName)
@@ -97,47 +118,37 @@ OuterLoop:
 }
 
 // serveDirectory lists the contents of a directory in a nginx-style.
-func (fb FileserverBackend) serveDirectory(w http.ResponseWriter, r *http.Request, dirPath *utils.Path, contactName string) {
+func (fb *FileserverBackend) serveDirectory(w http.ResponseWriter, r *http.Request, dirPath *utils.Path, filesOverride []*utils.Path, contactName string) {
+	var err error
+	var entries []*utils.Path
+	entries = filesOverride
+	if filesOverride == nil {
+		entries, err = dirPath.ReadDir()
+	}
 
-	entries, err := os.ReadDir(dirPath.String())
 	fmt.Println(entries)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
-	const tpl = `
-<!DOCTYPE html>
-<html>
-<head>
-	<title>Index of /{{.Path}}</title>
-</head>
-<body>
-	<h1>Index of /{{.Path}}</h1>
-	<ul>
-		{{range .Entries}}
-		<li><a href="/files/{{$.Path}}/{{.Name}}">{{.}}</a></li>
-		{{end}}
-	</ul>
-</body>
-</html>
-`
-	tmpl, err := template.New("directory").Parse(tpl)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	if fb.templates == nil {
+		log.Fatal("Fileserver's templates are nil")
 		return
 	}
-	err = tmpl.Execute(w, map[string]interface{}{
+
+	err = fb.templates.ExecuteTemplate(w, "files.gohtml", map[string]interface{}{
 		"Path":    strings.TrimPrefix(r.URL.Path, "/files/"),
 		"Entries": entries,
 	})
 	if err != nil {
+		fmt.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (fb FileserverBackend) serveFile(w http.ResponseWriter, r *http.Request, filePath *utils.Path, contactName string) {
+func (fb *FileserverBackend) serveFile(w http.ResponseWriter, r *http.Request, filePath *utils.Path, contactName string) {
 	const chunkSize = 1 * 1024 * 1024 // 1MB buffer size
 	fileStat, err := os.Stat(filePath.String())
 	if err != nil {

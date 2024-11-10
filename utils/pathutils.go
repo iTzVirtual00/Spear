@@ -25,10 +25,25 @@ func NewPath(p string) *Path {
 }
 
 func (p Path) String() string {
-	return p.path
+	isDir, _ := p.IsDir()
+	if isDir && !strings.HasSuffix(p.path, "/") {
+		return p.path + "/"
+	} else {
+		return p.path
+	}
 }
 
 func (p Path) Base() string {
+	isDir, _ := p.IsDir()
+	res := filepath.Base(p.path)
+	if isDir && !strings.HasSuffix(res, "/") {
+		return res + "/"
+	} else {
+		return res
+	}
+}
+
+func (p Path) Name() string {
 	return filepath.Base(p.path)
 }
 
@@ -89,4 +104,17 @@ func (p Path) IsRelativeTo(parent *Path) (bool, error) {
 		return false, err
 	}
 	return strings.HasPrefix(toCheck.path, parent.path), nil
+}
+
+func (p Path) ReadDir() ([]*Path, error) {
+	var res []*Path
+	entries, err := os.ReadDir(p.path)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		res = append(res, NewPath(p.path+"/"+entry.Name()))
+	}
+
+	return res, nil
 }

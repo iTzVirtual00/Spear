@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Index of /{{.Path}}</title>
+    <meta charset="utf-8"/>
+
+    <!-- Styles -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kognise/water.css@latest/dist/dark.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            max-width: 90%;
+        }
+
+        #title {
+            font-size: 1.1em;
+            margin: 5px 0;
+        }
+
+        #title .stats {
+            font-size: 0.8em;
+            float: right;
+            margin: 0 10px;
+        }
+
+        #listing {
+            font-size: 1.1em;
+        }
+
+        #listing h1 {
+            font-size: 1.1em;
+        }
+
+        .folderup {
+            color: #FFCA28;
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+    </style>
+    <style>
+        a.link-icon:before,
+        a.link-icon.link-file[href]:before {
+            content: "\f016"; /* generic file icon */
+            display: inline-block;
+            font: normal normal normal 14px/1 FontAwesome;
+            font-size: inherit;
+            text-rendering: auto;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transform: translate(0, 0);
+            width: 20px;
+            text-align: right;
+            margin-right: 10px;
+        }
+
+        a[href$=".txt"].link-icon:before,
+        a.link-icon.link-text[href]:before {
+            content: "\f0f6"; /*Text*/
+        }
+
+        a[href$=".pdf"].link-icon:before,
+        a.link-icon.link-pdf[href]:before {
+            content: "\f1c1"; /*PDF*/
+        }
+
+        a[href$=".doc"].link-icon:before,
+        a[href$=".docx"].link-icon:before,
+        a.link-icon.link-word[href]:before {
+            content: "\f1c2"; /*Word*/
+        }
+
+        a[href$=".xls"].link-icon:before,
+        a[href$=".xlsx"].link-icon:before,
+        a.link-icon.link-excel[href]:before {
+            content: "\f1c3"; /*Excel*/
+        }
+
+        a[href$=".ppt"].link-icon:before,
+        a[href$=".pptx"].link-icon:before,
+        a.link-icon.link-powerpoint[href]:before {
+            content: "\f1c4"; /*Powerpoint*/
+        }
+
+        a[href$=".gif"].link-icon:before,
+        a[href$=".jpg"].link-icon:before,
+        a[href$=".jpeg"].link-icon:before,
+        a[href$=".png"].link-icon:before,
+        a[href$=".bmp"].link-icon:before,
+        a[href$=".tif"].link-icon:before,
+        a.link-icon.link-image[href]:before {
+            content: "\f1c5"; /*Image*/
+        }
+
+        a[href$=".zip"].link-icon:before,
+        a[href$=".zipx"].link-icon:before,
+        a[href$=".rar"].link-icon:before,
+        a[href$=".tar"].link-icon:before,
+        a[href$=".gz"].link-icon:before,
+        a[href$=".dmg"].link-icon:before,
+        a[href$=".iso"].link-icon:before,
+        a.link-icon.link-archive[href]:before {
+            content: "\f1c6"; /*Archive*/
+        }
+
+        a[href$=".wav"].link-icon:before,
+        a[href$=".mp3"].link-icon:before,
+        a[href$=".fla"].link-icon:before,
+        a[href$=".flac"].link-icon:before,
+        a[href$=".ra"].link-icon:before,
+        a[href$=".rma"].link-icon:before,
+        a[href$=".aif"].link-icon:before,
+        a[href$=".aiff"].link-icon:before,
+        a[href$=".aa"].link-icon:before,
+        a[href$=".aac"].link-icon:before,
+        a[href$=".aax"].link-icon:before,
+        a[href$=".ac3"].link-icon:before,
+        a[href$=".au"].link-icon:before,
+        a[href$=".ogg"].link-icon:before,
+        a[href$=".avr"].link-icon:before,
+        a[href$=".3ga"].link-icon:before,
+        a[href$=".flac"].link-icon:before,
+        a[href$=".mid"].link-icon:before,
+        a[href$=".midi"].link-icon:before,
+        a[href$=".m4a"].link-icon:before,
+        a[href$=".mp4a"].link-icon:before,
+        a[href$=".amz"].link-icon:before,
+        a[href$=".mka"].link-icon:before,
+        a[href$=".asx"].link-icon:before,
+        a[href$=".pcm"].link-icon:before,
+        a[href$=".m3u"].link-icon:before,
+        a[href$=".wma"].link-icon:before,
+        a[href$=".xwma"].link-icon:before,
+        a.link-icon.link-audio[href]:before {
+            content: "\f1c7"; /*Audio*/
+        }
+
+        a[href$=".avi"].link-icon:before,
+        a[href$=".mpg"].link-icon:before,
+        a[href$=".mp4"].link-icon:before,
+        a[href$=".mkv"].link-icon:before,
+        a[href$=".mov"].link-icon:before,
+        a[href$=".wmv"].link-icon:before,
+        a[href$=".vp6"].link-icon:before,
+        a[href$=".264"].link-icon:before,
+        a[href$=".vid"].link-icon:before,
+        a[href$=".rv"].link-icon:before,
+        a[href$=".webm"].link-icon:before,
+        a[href$=".swf"].link-icon:before,
+        a[href$=".h264"].link-icon:before,
+        a[href$=".flv"].link-icon:before,
+        a[href$=".mk3d"].link-icon:before,
+        a[href$=".gifv"].link-icon:before,
+        a[href$=".oggv"].link-icon:before,
+        a[href$=".3gp"].link-icon:before,
+        a[href$=".m4v"].link-icon:before,
+        a[href$=".movie"].link-icon:before,
+        a[href$=".divx"].link-icon:before,
+        a.link-icon.link-video[href]:before {
+            content: "\f1c8"; /*Video*/
+        }
+
+        a[href$=".css"].link-icon:before,
+        a[href$=".js"].link-icon:before,
+        a[href$=".py"].link-icon:before,
+        a[href$=".git"].link-icon:before,
+        a[href$=".py"].link-icon:before,
+        a[href$=".cpp"].link-icon:before,
+        a[href$=".h"].link-icon:before,
+        a[href$=".ini"].link-icon:before,
+        a[href$=".config"].link-icon:before,
+        a.link-icon.link-code[href]:before {
+            content: "\f1c9"; /*code*/
+        }
+
+        a[href$=".exe"].link-icon:before,
+        a[href$=".jar"].link-icon:before,
+        a[href$=".dll"].link-icon:before,
+        a[href$=".bat"].link-icon:before,
+        a[href$=".pl"].link-icon:before,
+        a[href$=".scr"].link-icon:before,
+        a[href$=".msi"].link-icon:before,
+        a[href$=".app"].link-icon:before,
+        a[href$=".deb"].link-icon:before,
+        a[href$=".apk"].link-icon:before,
+        a[href$=".jar"].link-icon:before,
+        a[href$=".vb"].link-icon:before,
+        a[href$=".prg"].link-icon:before,
+        a[href$=".sh"].link-icon:before,
+        a.link-icon.link-exe[href]:before {
+            content: "\f085"; /*Executable*/
+        }
+
+        a[href$=".com"].link-icon:before,
+        a[href$=".net"].link-icon:before,
+        a[href$=".org"].link-icon:before,
+        a[href$=".edu"].link-icon:before,
+        a[href$=".gov"].link-icon:before,
+        a[href$=".mil"].link-icon:before,
+            /* a[href$="/"].link-icon:before,
+            a[href$=".html"].link-icon:before, */
+        a[href$=".htm"].link-icon:before,
+        a[href$=".xhtml"].link-icon:before,
+        a[href$=".jhtml"].link-icon:before,
+        a[href$=".php"].link-icon:before,
+        a[href$=".php3"].link-icon:before,
+        a[href$=".php4"].link-icon:before,
+        a[href$=".php5"].link-icon:before,
+        a[href$=".phtml"].link-icon:before,
+        a[href$=".asp"].link-icon:before,
+        a[href$=".aspx"].link-icon:before,
+        a[href$=".cfm"].link-icon:before,
+        a[href*="?"].link-icon:before,
+        a[href*="#"].link-icon:before,
+        a.link-icon:not([href*='.']):before,
+        a.link-icon.link[href]:before {
+            content: "\f0c1"; /*link*/
+        }
+
+
+        /*For CodePen test*/
+        ul {
+            list-style: none;
+        }
+
+        a {
+            text-decoration: none;
+            line-height: 1.6;
+        }
+
+        a[href$="/"].link-icon:before,
+        a.link-icon.link-folder[href]:before {
+            content: "\f07b"; /*Folder*/
+        }
+
+        a[href$=".html"].link-icon:before,
+        a.link-icon.link-html5[href]:before {
+            content: "\f13b"; /*HTML5*/
+        }
+    </style>
+</head>
+<body>
+<div id="title">
+    <span>Directory Listing</span>
+    <span class="stats" id='file-stats'></span>
+    <span class="stats" id='dir-stats'></span>
+</div>
+
+<div id='listing'>
+    <div>
+        <h1>Index of /</h1>
+        <hr>
+        <pre><a href="../">../</a>
+{{range .Entries}}
+<a href="./{{.Base}}">{{.Base}}</a>                                             01-Jan-1070 00:00       1337M
+{{end}}
+</pre>
+        <hr>
+    </div>
+</div>
+</body>
+<!-- Script -->
+<script type="text/javascript">
+    var pathElement = document.querySelector('#listing h1');
+    pathElement.className = 'listing';
+
+    var pathName = pathElement.innerHTML;
+    pathName = pathName.replace('Index of ', '');
+    pathElement.innerHTML = pathName;
+
+    var fileCount = 0
+        , dirCount = 0
+        , dirStatElem = document.getElementById('dir-stats')
+        , fileStatElem = document.getElementById('file-stats')
+    ;
+
+    var allLinks = document.getElementsByTagName('a');
+    for (let item of allLinks) {
+        if (item.innerHTML != "../") {
+            if (item.innerHTML.endsWith('/')) {
+                dirCount += 1;
+            } else {
+                fileCount += 1;
+            }
+        }
+        item.className = "link-icon";
+    }
+
+    var parentFolderElement = document.querySelector("a[href='../']");
+    parentFolderElement.className = "folderup";
+    parentFolderElement.innerHTML = "&#8682; Up";
+
+    if (dirCount == 1) {
+        dirStatElem.innerHTML = dirCount + " directory";
+    } else {
+        dirStatElem.innerHTML = dirCount + " directories";
+    }
+
+    if (fileCount == 1) {
+        fileStatElem.innerHTML = fileCount + " file";
+    } else {
+        fileStatElem.innerHTML = fileCount + " files";
+    }
+
+</script>
+</html>
