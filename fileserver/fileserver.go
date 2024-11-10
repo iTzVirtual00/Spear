@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"spear/auths"
 	"spear/config"
 	"spear/utils"
 	"strconv"
@@ -13,8 +14,9 @@ import (
 
 // FileserverBackend holds the set of paths that can be served by this backend.
 type FileserverBackend struct {
-	Config     *config.SpearConfig
-	Parameters config.SpearParameters
+	Config      *config.SpearConfig
+	Parameters  config.SpearParameters
+	AuthMethods []auths.AuthMethod
 }
 
 func (fb FileserverBackend) RegisterFileserver(mux *http.ServeMux) {
@@ -24,6 +26,36 @@ func (fb FileserverBackend) RegisterFileserver(mux *http.ServeMux) {
 
 // fileserverHandler handles serving files and directories based on fb.Paths.
 func (fb FileserverBackend) fileserverHandler(w http.ResponseWriter, r *http.Request) {
+	var contactName = ""
+	var authResult auths.AuthResult
+OuterLoop:
+	for _, authMethod := range fb.AuthMethods {
+		authResult = authMethod.Authenticate(w, r)
+		fmt.Println(authResult)
+		switch authResult.State {
+		case auths.Valid:
+			fallthrough
+		case auths.Denied:
+			break OuterLoop
+		}
+	}
+
+	switch authResult.State {
+	case auths.Valid:
+		contactName = authResult.ContactName
+		break
+	// if last state was Denied, we found a valid auth with incorrect credentials
+	case auths.Denied:
+		http.Error(w, "Permission denied", http.StatusForbidden)
+		return
+	// if last state was Inapplicable, no auth method succeded, we now try default auth
+	case auths.Inapplicable:
+		http.Redirect(w, r, "/basic"+"?location="+r.URL.Path, http.StatusFound)
+		return
+	}
+
+	fmt.Println("authenticated: ", contactName)
+
 	relativePath := utils.NewPath(strings.TrimPrefix(r.URL.Path, "/files/"))
 
 	var target *utils.Path = nil
@@ -44,7 +76,7 @@ func (fb FileserverBackend) fileserverHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if target == nil { // remove carefully (required by forloop)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		http.Error(w, http.StatusText(http.StatusNotFound)+"<br>"+contactName, http.StatusNotFound)
 		return
 	}
 
@@ -53,19 +85,19 @@ func (fb FileserverBackend) fileserverHandler(w http.ResponseWriter, r *http.Req
 
 	fmt.Println(target, isRegular)
 	if isDir {
-		fb.serveDirectory(w, r, target)
+		fb.serveDirectory(w, r, target, contactName)
 		return
 	} else if isRegular {
-		fb.serveFile(w, r, target)
+		fb.serveFile(w, r, target, contactName)
 		return
 	}
 
-	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	http.Error(w, http.StatusText(http.StatusNotFound)+"<br>"+contactName, http.StatusNotFound)
 	return
 }
 
 // serveDirectory lists the contents of a directory in a nginx-style.
-func (fb FileserverBackend) serveDirectory(w http.ResponseWriter, r *http.Request, dirPath *utils.Path) {
+func (fb FileserverBackend) serveDirectory(w http.ResponseWriter, r *http.Request, dirPath *utils.Path, contactName string) {
 
 	entries, err := os.ReadDir(dirPath.String())
 	fmt.Println(entries)
@@ -105,7 +137,7 @@ func (fb FileserverBackend) serveDirectory(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (fb FileserverBackend) serveFile(w http.ResponseWriter, r *http.Request, filePath *utils.Path) {
+func (fb FileserverBackend) serveFile(w http.ResponseWriter, r *http.Request, filePath *utils.Path, contactName string) {
 	const chunkSize = 1 * 1024 * 1024 // 1MB buffer size
 	fileStat, err := os.Stat(filePath.String())
 	if err != nil {

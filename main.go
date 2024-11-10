@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-
 	spearConfig, err := config.LoadConfig("spear.yml")
 
 	paths := []*utils.Path{
@@ -29,10 +28,10 @@ func main() {
 	mux := http.NewServeMux()
 
 	var authMethods = []auths.AuthMethod{
-		spear.SpearAuth{
+		httpbasic.BasicAuth{
 			Config: spearConfig,
 		},
-		httpbasic.BasicAuth{
+		spear.SpearAuth{
 			Config: spearConfig,
 		},
 	}
@@ -40,8 +39,9 @@ func main() {
 		auth.Register(mux)
 	}
 	fb := fileserver.FileserverBackend{
-		Config:     spearConfig,
-		Parameters: spearParameters,
+		Config:      spearConfig,
+		Parameters:  spearParameters,
+		AuthMethods: authMethods,
 	}
 	fb.RegisterFileserver(mux)
 

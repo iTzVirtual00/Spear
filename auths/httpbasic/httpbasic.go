@@ -3,8 +3,8 @@ package httpbasic
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"net/http"
+	"spear/auths"
 	"spear/config"
 )
 
@@ -17,30 +17,55 @@ func sha256Sum(str string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func (auth BasicAuth) Root(w http.ResponseWriter, req *http.Request) {
+// remember that basicauth's username may be different from contact's name
+func (auth BasicAuth) findContact(username string, password string) string {
+	pwSum := sha256Sum(password)
+	for name, contact := range auth.Config.Contacts {
+		creds := contact.Auths.HTTP
+		if creds == nil {
+			continue
+		}
+		if creds.Username == username && creds.Password == pwSum {
+			return name
+		}
+	}
+	return ""
+}
 
-	u, p, err := req.BasicAuth()
-	if !err {
+func (auth BasicAuth) Root(w http.ResponseWriter, req *http.Request) {
+	u, p, ok := req.BasicAuth()
+	if !ok {
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 
-	pwHash := sha256Sum(p)
-	for name, contact := range auth.Config.Contacts {
-		httpAuth := contact.Auths.HTTP
-		if httpAuth == nil {
-			continue
-		}
-		if httpAuth.Username == u && httpAuth.Password == pwHash {
-			fmt.Fprintf(w, "Hi from BasicAuth\n")
-			fmt.Fprintf(w, "Welcome back, %s", name)
-			return
-		}
+	contactName := auth.findContact(u, p)
 
+	if contactName == "" {
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
 	}
-	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
-	http.Error(w, "Access denied", http.StatusUnauthorized)
+
+	redirect := req.URL.Query().Get("location")
+	if redirect == "" {
+		redirect = "/files/"
+	}
+
+	http.Redirect(w, req, redirect, http.StatusFound)
+}
+
+func (auth BasicAuth) Authenticate(w http.ResponseWriter, req *http.Request) auths.AuthResult {
+	u, p, ok := req.BasicAuth()
+	if !ok {
+		return auths.AuthResult{State: auths.Inapplicable}
+	}
+	contactName := auth.findContact(u, p)
+	if contactName == "" {
+		return auths.AuthResult{State: auths.Denied}
+	}
+	return auths.AuthResult{State: auths.Valid, ContactName: contactName}
 }
 
 func (auth BasicAuth) Register(mux *http.ServeMux) {
