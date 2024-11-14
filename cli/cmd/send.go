@@ -2,29 +2,34 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"spear/entrypoints"
 )
 
 var (
-	sendAddress string
-	sendFiles   []string
-	sendNames   []string
-	sendCmd     = &cobra.Command{
-		Use:   "send",
-		Short: "asdddefw",
-		Long:  `asdddfew`,
+	sendCommand = entrypoints.SendCommand{
+		Listen: DefaultListenValue, // default
+	}
+	sendCmd = &cobra.Command{
+		Use: "send",
 		Run: func(cmd *cobra.Command, args []string) {
-			if sendAddress != "" {
-				//TODO the sender sends the file to the address
+			if cmd.Flag("address").Changed {
+				// spear send -a Address[:port] -f <outfile>
+				entrypoints.SendClient(&spearConfig, &sendCommand)
 			} else {
-				//TODO the sender waits for someone to establish a new connection to the correct port and send the file to that person
+				// spear send -l Port -f <outfile>
+				entrypoints.SendAsServer(&spearConfig, &sendCommand)
 			}
 		},
 	}
 )
 
 func init() {
-	sendCmd.Flags().StringVarP(&sendAddress, "address", "a", "", "asd")
-	sendCmd.Flags().StringArrayVarP(&sendFiles, "file", "f", []string{}, "asd")
-	sendCmd.Flags().StringArrayVarP(&sendNames, "endpoint", "e", []string{}, "asd")
+	sendCmd.Flags().VarP(&sendCommand.Address, "address", "a", "asd")
+	sendCmd.Flags().VarP(&sendCommand.Listen, "listen", "l", "asd")
+	sendCmd.MarkFlagsMutuallyExclusive("listen", "address")
+
+	sendCmd.Flags().StringArrayVarP(&sendCommand.Files, "file", "f", []string{}, "asd")
+	sendCmd.MarkFlagRequired("file")
+
 	rootCmd.AddCommand(sendCmd)
 }

@@ -1,72 +1,74 @@
 package main
 
 import (
-	"crypto/tls"
 	"log"
-	"net/http"
-	"spear/auths"
-	"spear/auths/httpbasic"
-	"spear/auths/spear"
+	"spear/cli"
 	"spear/config"
-	"spear/fileserver"
-	"spear/utils"
 )
 
 func main() {
+
 	spearConfig, err := config.LoadConfig("spear.yml")
 
-	paths := []*utils.Path{
-		utils.NewPath("./config"),
-	}
-	spearParameters := config.SpearParameters{
-		Paths: paths,
-	}
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-	mux := http.NewServeMux()
+	cli.RunCLI(*spearConfig) // actual code in ./entrypoints
+	/*
+		paths := []*utils.Path{
+			utils.NewPath("./temp/"),
+		}
+		spearParameters := config.SpearParameters{
+			Paths: paths,
+		}
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		mux := http.NewServeMux()
 
-	var authMethods = []auths.AuthMethod{
-		httpbasic.BasicAuth{
-			Config: spearConfig,
-		},
-		spear.SpearAuth{
-			Config: spearConfig,
-		},
-	}
-	for _, auth := range authMethods {
-		auth.Register(mux)
-	}
-	fb := fileserver.FileserverBackend{
-		Config:      spearConfig,
-		Parameters:  spearParameters,
-		AuthMethods: authMethods,
-	}
-	fb.RegisterFileserver(mux)
-
-	addr := "0.0.0.0:8000"
-	certFile := "cert.pem"
-	keyFile := "key.pem"
-
-	srv := &http.Server{
-		Addr:    addr,
-		Handler: mux,
-		TLSConfig: &tls.Config{
-			MinVersion: tls.VersionTLS13,
-			GetConfigForClient: func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
-				return nil, nil
+		var authMethods = []auths.AuthMethod{
+			httpbasic.BasicAuth{
+				Config: spearConfig,
 			},
-			ClientAuth: tls.RequestClientCert,
+			spear.SpearAuth{
+				Config: spearConfig,
+			},
+		}
 
-			//InsecureSkipVerify:    true,
-			//VerifyPeerCertificate: customCertVerify,
-		},
-	}
+		for _, auth := range authMethods {
+			auth.Register(mux)
+		}
+		fb := fileserver.FileserverBackend{
+			Config:      spearConfig,
+			Parameters:  spearParameters,
+			AuthMethods: authMethods,
+		}
+		fb.RegisterFileserver(mux)
 
-	log.Printf("Starting server on %s", addr)
+		addr := "0.0.0.0:8000"
+		certFile := "cert.pem"
+		keyFile := "key.pem"
 
-	err = srv.ListenAndServeTLS(certFile, keyFile)
-	log.Fatal(err)
+		srv := &http.Server{
+			Addr:    addr,
+			Handler: mux,
+			TLSConfig: &tls.Config{
+				MinVersion: tls.VersionTLS13,
+				GetConfigForClient: func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
+					return nil, nil
+				},
+				ClientAuth: tls.RequestClientCert,
 
+				//InsecureSkipVerify:    true,
+				//VerifyPeerCertificate: customCertVerify,
+			},
+		}
+
+		log.Printf("Starting server on %s", addr)
+
+		err = srv.ListenAndServeTLS(certFile, keyFile)
+		log.Fatal(err)
+	*/
 }

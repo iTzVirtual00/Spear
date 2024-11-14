@@ -2,29 +2,38 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"spear/entrypoints"
 )
 
 var (
-	receiveAddress string
-	receiveFiles   []string
-	receiveNames   []string
-	receiveCmd     = &cobra.Command{
-		Use:   "receive",
-		Short: "asddzddefw",
-		Long:  `asdzddfew`,
+	receiveCommand = entrypoints.ReceiveCommand{
+		Listen: DefaultListenValue, // default
+	}
+	receiveCmd = &cobra.Command{
+		Use: "receive",
+		//Short: "",
+		//Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			if receiveAddress != "" {
-				//TODO the receiver sends a request to the address that is waiting for someone that ask for that file
+			if cmd.Flag("address").Changed {
+				// spear receive -a Address[:port] -f <outfile>
+				entrypoints.ReceiveClient(&spearConfig, &receiveCommand)
 			} else {
-				//TODO the receiver wait to receive the file from someone in the correct port
+				// spear receive -l Port -f <outfile>
+				entrypoints.ReceiveServer(&spearConfig, &receiveCommand)
 			}
 		},
 	}
 )
 
 func init() {
-	receiveCmd.Flags().StringVarP(&receiveAddress, "address", "a", "", "asd")
-	receiveCmd.Flags().StringArrayVarP(&receiveFiles, "file", "f", []string{}, "asd")
-	receiveCmd.Flags().StringArrayVarP(&receiveNames, "endpoint", "e", []string{}, "asd")
+	receiveCmd.Flags().VarP(&receiveCommand.Address, "address", "a", "")
+	receiveCmd.Flags().VarP(&receiveCommand.Listen, "listen", "l", "asd")
+	receiveCmd.MarkFlagsMutuallyExclusive("listen", "address")
+
+	receiveCmd.Flags().StringArrayVarP(&receiveCommand.Files, "file", "f", []string{}, "asd")
+	receiveCmd.MarkFlagRequired("file")
+
+	receiveCmd.Flags().StringArrayVarP(&receiveCommand.AllowedContacts, "contact", "c", []string{}, "asd")
+
 	rootCmd.AddCommand(receiveCmd)
 }
