@@ -249,11 +249,11 @@
 
 <div id='listing'>
     <div>
-        <h1>Index of /</h1>
+        <h1>Index of {{ .Path }}</h1>
         <hr>
         <pre><a href="../">../</a>
 {{range .Entries}}
-<a href="./{{.Base}}">{{.Base}}</a>                                             01-Jan-1070 00:00       1337M
+<a href="./{{.Base}}">{{.Base}}</a> {{if not .IsDir}}{{ .SizeHumanReadable }}{{end}}
 {{end}}
 </pre>
         <hr>

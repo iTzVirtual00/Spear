@@ -5,11 +5,8 @@ import (
 	"spear/config"
 )
 
-var spearConfig config.SpearConfig
-
 func RunCLI(config config.SpearConfig) {
-	spearConfig = config
-	errCmd := cmd.Execute()
+	errCmd := cmd.Execute(config)
 	if errCmd != nil {
 		return
 	}

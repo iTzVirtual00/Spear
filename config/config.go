@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/goccy/go-yaml"
 	"os"
+
+	"github.com/goccy/go-yaml"
 )
 
 type Contact struct {
@@ -16,7 +17,7 @@ type Auths struct {
 }
 
 type SpearAuth struct {
-	Key string `yaml:"key"`
+	Fingerprint string `yaml:"fingerprint"`
 }
 
 type HTTPAuth struct {
@@ -25,7 +26,13 @@ type HTTPAuth struct {
 }
 
 type SpearConfig struct {
-	Contacts map[string]Contact `yaml:"contacts"`
+	Contacts   map[string]Contact  `yaml:"contacts"`
+	Identities map[string]Identity `yaml:"identities"`
+}
+
+type Identity struct {
+	Cert string `yaml:"cert"`
+	Key  string `yaml:"key"`
 }
 
 func LoadConfig(path string) (*SpearConfig, error) {
